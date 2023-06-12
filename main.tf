@@ -91,7 +91,7 @@ resource "aws_subnet" "private-b1" {
     Name = "private - b1"
   }
 }
-
+#--------------------------------------------------------private subnet
 #Creating a Private subnet
 resource "aws_subnet" "private-a2" {
   vpc_id     = aws_vpc.customVPC.id
@@ -113,7 +113,7 @@ resource "aws_subnet" "private-b2" {
     Name = "private - b2"
   }
 }
-
+#-------------------------------------------------------private subnet
 ################################
 #Creating a Private subnet
 # resource "aws_subnet" "private-b29" {
@@ -190,5 +190,82 @@ resource "aws_instance" "ec2-public1" {
   tags = {
     Name = "ec2 created in public_a"
   }
+}
+
+resource "aws_instance" "ec2-private1" {
+  ami           = "ami-0715c1897453cabd1"
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.private-a1.id
+  vpc_security_group_ids = [aws_security_group.vpc-sg.id]
+
+  tags = {
+    Name = "ec2 created in private_a"
+  }
+}
+
+# module "rds" {
+
+#   source = "./modules/RDS"
+
+# }
+
+
+resource "aws_db_subnet_group" "default" {
+  name       = "main"
+  subnet_ids = ["${aws_subnet.private-a1.id}", "${aws_subnet.private-b1.id}"]
+
+  tags = {
+    Name = "My DB subnet group"
+  }
+}
+
+resource "aws_security_group" "db_sg" {
+
+  name = "db_sg_name"
+  description = "security group for the database"
+  vpc_id = aws_vpc.customVPC.id
+
+  # ingress = {
+
+  #   description = "allow Mysql traffic"
+  #   from_port = "3306"
+  #   to_port = "3306"
+  #   protocol = "tcp"
+  #   aws_security_group = [aws_security_group.vpc-sg.id]
+  # }
+  
+  tags = {
+    Name = "database_sg"
+  }
+
+}
+
+
+resource "aws_db_instance" "rds" {
+  # source  = "terraform-aws-modules/rds/aws"
+  # version = "5.9.0"
+  # insert the 1 required variable here
+  identifier = "infradb"
+  engine = "mysql"
+  engine_version = "8.0.32"
+  instance_class = "db.t2.micro"
+  allocated_storage = 5
+  # name = "INFRA"
+  username = "infra"
+  password = "Infra123"
+  port = 3306
+  skip_final_snapshot = true
+  db_subnet_group_name = aws_db_subnet_group.default.id
+  # vpc_security_group_ids = aws_security_group.vpc-sg.id
+  # subnet_ids = aws_subnet.private-a1.id
+  multi_az = true
+
+  # #DB Parameter Group
+  # family = "mysql5.7"
+
+  # #DB Option group
+  # option_group_name = "mysql5-7-option-group"
+  
+  # major_engine_version = "5.7"
 }
 
